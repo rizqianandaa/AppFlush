@@ -1,0 +1,32 @@
+## Build output .NET / Visual Studio -- ini penyebab utama folder jadi ratusan MB,
+## karena berisi hasil compile + seluruh runtime .NET self-contained yang dibundel.
+[Bb]in/
+[Oo]bj/
+publish/
+
+## Cache & file workspace Visual Studio (bisa berisi cache besar, tidak perlu di-commit)
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Hasil compile Inno Setup (installer .exe akhir -- ini yang diunggah ke GitHub
+## Releases secara manual/otomatis, BUKAN yang di-commit ke repo)
+installer/Output/
+
+## NuGet
+*.nupkg
+packages/
+
+## Hasil unit test
+tests/**/TestResults/
+*.trx
+
+## Editor lain (aman walau tidak dipakai)
+.idea/
+.vscode/
+
+## File OS
+Thumbs.db
+.DS_Store

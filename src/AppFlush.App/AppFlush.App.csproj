@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>AppFlush.App</RootNamespace>
+    <AssemblyName>AppFlush</AssemblyName>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon Condition="Exists('Resources/AppFlush.ico')">Resources/AppFlush.ico</ApplicationIcon>
+    <Platforms>x64</Platforms>
+
+    <!--
+      Optimasi ukuran hasil publish self-contained single-file (dipakai installer.iss).
+      Tidak mengubah command "dotnet publish" yang sudah dipakai; properti ini otomatis
+      ikut terbaca dari csproj ini.
+      - EnableCompressionInSingleFile: mengompres semua assembly .NET yang dibundel di
+        dalam satu .exe. Ini pengurangan ukuran paling besar untuk publish self-contained.
+      - InvariantGlobalization: membuang data budaya/kalender ICU yang tidak dipakai
+        AppFlush (aplikasi ini cuma menampilkan nama/versi/penerbit dari registry, tidak
+        ada pemformatan tanggal/angka spesifik-budaya), menghemat beberapa MB tambahan.
+      - SatelliteResourceLanguages: cuma bundling resource bahasa Inggris dari dependensi,
+        buang terjemahan bahasa lain yang tidak pernah dipakai.
+      - DebugType=none: tidak membuat file .pdb terpisah saat publish Release.
+      Catatan: trimming (PublishTrimmed) SENGAJA tidak dipakai. WinForms banyak memakai
+      reflection sehingga trimming agresif berisiko menghapus kode yang sebenarnya
+      dibutuhkan saat runtime dan menyebabkan crash yang sulit dilacak.
+    -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppFlush.Core\AppFlush.Core.csproj" />
+  </ItemGroup>
+
+</Project>

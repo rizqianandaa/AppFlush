@@ -1,0 +1,79 @@
+name: Build Windows exe & installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"] # push tag "v1.0.0" dkk -> otomatis bikin GitHub Release + lampirkan installer
+
+permissions:
+  contents: write # dibutuhkan supaya job release bisa membuat Release & unggah asset
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore AppFlush.sln
+
+      - name: Build
+        run: dotnet build AppFlush.sln -c Release --no-restore
+
+      - name: Run unit tests
+        run: dotnet test tests/AppFlush.Core.Tests/AppFlush.Core.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish self-contained single-file (no .NET runtime needed on user PC)
+        run: >
+          dotnet publish src/AppFlush.App/AppFlush.App.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish
+
+      - name: Upload raw published app (portable, no installer)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppFlush-portable
+          path: publish/
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\installer.iss /DPublishDir="$env:GITHUB_WORKSPACE\publish"
+        shell: pwsh
+
+      - name: Compute SHA256 checksum
+        run: |
+          Get-FileHash "installer\Output\AppFlush-Setup-1.0.0.exe" -Algorithm SHA256 |
+            Select-Object -ExpandProperty Hash | Out-File -Encoding ascii "installer\Output\AppFlush-Setup-1.0.0.exe.sha256.txt"
+        shell: pwsh
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppFlush-Setup
+          path: |
+            installer/Output/AppFlush-Setup-1.0.0.exe
+            installer/Output/AppFlush-Setup-1.0.0.exe.sha256.txt
+
+      # Hanya jalan saat workflow ini dipicu oleh push tag (misalnya "v1.0.0"), bukan
+      # saat push biasa ke branch main atau saat dijalankan manual. Ini yang membuat
+      # installer .exe otomatis muncul di tab "Releases" GitHub, tanpa perlu upload
+      # manual dan tanpa perlu commit file .exe ke dalam repo sama sekali.
+      - name: Create GitHub Release with installer attached
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            installer/Output/AppFlush-Setup-1.0.0.exe
+            installer/Output/AppFlush-Setup-1.0.0.exe.sha256.txt
+          generate_release_notes: true
